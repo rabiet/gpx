@@ -6,7 +6,7 @@ use error_chain::{bail, ensure};
 use xml::reader::XmlEvent;
 
 use crate::errors::*;
-use crate::parser::{bounds, extensions, link, person, string, time, verify_starting_tag, Context};
+use crate::parser::{bounds, extensions, link, person, string, time, verify_starting_tag, Context, copyright};
 use crate::Metadata;
 
 pub fn consume<R: Read>(context: &mut Context<R>) -> Result<Metadata> {
@@ -32,6 +32,9 @@ pub fn consume<R: Read>(context: &mut Context<R>) -> Result<Metadata> {
                 }
                 "description" => {
                     metadata.description = Some(string::consume(context, "description", true)?);
+                },
+                "desc" => {
+                    metadata.description = Some(string::consume(context, "desc", true)?);
                 }
                 "author" => {
                     metadata.author = Some(person::consume(context, "author")?);
@@ -50,6 +53,9 @@ pub fn consume<R: Read>(context: &mut Context<R>) -> Result<Metadata> {
                 }
                 "extensions" => {
                     extensions::consume(context)?;
+                },
+                "copyright" => {
+                    copyright::consume(context, "copyright");
                 }
                 child => {
                     bail!(ErrorKind::InvalidChildElement(

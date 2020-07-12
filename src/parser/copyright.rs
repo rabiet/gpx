@@ -6,7 +6,7 @@ use error_chain::{bail, ensure};
 use xml::reader::XmlEvent;
 
 use crate::errors::*;
-use crate::parser::{email, link, string, verify_starting_tag, Context};
+use crate::parser::{string, verify_starting_tag, Context};
 use crate::Person;
 
 pub fn consume<R: Read>(context: &mut Context<R>, tagname: &'static str) -> Result<Person> {
@@ -27,20 +27,18 @@ pub fn consume<R: Read>(context: &mut Context<R>, tagname: &'static str) -> Resu
 
         match next_event {
             XmlEvent::StartElement { ref name, .. } => match name.local_name.as_ref() {
-                "name" => person.name = Some(string::consume(context, "name", false)?),
-                "email" => person.email = Some(string::consume(context, "email", false)?),
-                "link" => person.link = Some(link::consume(context)?),
+                "year" => {string::consume(context, "year", false)?;},
                 child => {
                     bail!(ErrorKind::InvalidChildElement(
                         String::from(child),
-                        "person"
+                        "copyright"
                     ));
                 }
             },
             XmlEvent::EndElement { ref name } => {
                 ensure!(
                     name.local_name == tagname,
-                    ErrorKind::InvalidClosingTag(name.local_name.clone(), "person")
+                    ErrorKind::InvalidClosingTag(name.local_name.clone(), "copyright")
                 );
                 context.reader.next(); //consume the end tag
                 return Ok(person);
@@ -51,7 +49,7 @@ pub fn consume<R: Read>(context: &mut Context<R>, tagname: &'static str) -> Resu
         }
     }
 
-    bail!(ErrorKind::MissingClosingTag("person"));
+    bail!(ErrorKind::MissingClosingTag("copyright"));
 }
 
 #[cfg(test)]
@@ -63,17 +61,12 @@ mod tests {
     fn consume_whole_person() {
         let result = consume!(
             "
-                <person>
-                    <name>John Doe</name>
-                    <email id=\"john.doe\" domain=\"example.com\" />
-                    <link href=\"example.com\">
-                        <text>hello world</text>
-                        <type>some type</type>
-                    </link>
+                <copyright>
+                    <year>(c) 2020</year>
                 </person>
             ",
             GpxVersion::Gpx11,
-            "person"
+            "copyright"
         );
 
         assert!(result.is_ok());

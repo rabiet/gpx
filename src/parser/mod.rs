@@ -1,5 +1,3 @@
-//! Handles parsing GPX format.
-
 // Just a shared macro for testing 'consume'.
 #[cfg(test)]
 #[macro_export]
@@ -45,6 +43,7 @@ pub mod time;
 pub mod track;
 pub mod tracksegment;
 pub mod waypoint;
+pub mod copyright;
 
 use std::io::Read;
 use std::iter::Peekable;

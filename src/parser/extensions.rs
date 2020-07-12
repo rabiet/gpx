@@ -8,34 +8,67 @@ use error_chain::ensure;
 use xml::reader::XmlEvent;
 
 use crate::errors::*;
-use crate::parser::Context;
+use crate::parser::{Context, string};
+use crate::Extension;
 
 /// consume consumes a single string as tag content.
-pub fn consume<R: Read>(context: &mut Context<R>) -> Result<()> {
-    let mut started = false;
+pub fn consume<R: Read>(context: &mut Context<R>) -> Result<(Extension)> {
+    let mut extension: Extension = Extension { speed: None, accuracy: None, bearing: None };
+    loop {
+        let next_event = {
+            if let Some(next) = context.reader.peek() {
+                match next {
+                    Ok(n) => n,
+                    Err(_) => panic!("error while parsing waypoint event"),
+                }
+            } else {
+                break;
+            }
+        };
 
-    for event in context.reader() {
-        match event.chain_err(|| "error while parsing XML")? {
-            XmlEvent::StartElement { name, .. } => {
-                // flip started depending on conditions
-                if &name.local_name == "extensions" {
-                    ensure!(!started, "extensions tag opened twice");
-
-                    started = true;
+        match next_event {
+            XmlEvent::StartElement { ref name, .. } => {
+                match name.local_name.as_ref() {
+                    "speed" => {
+                        extension.speed = Some(
+                            string::consume(context, "speed", false)?
+                                .parse()
+                                .chain_err(|| "error while casting speed to f64")?,
+                        );
+                    },
+                    "extensions" => {
+                        context.reader.next();
+                    },
+                    "accuracy" => {
+                        extension.accuracy = Some(
+                            string::consume(context, "accuracy", false)?
+                                .parse()
+                                .chain_err(|| "error while casting speed to f64")?,
+                        );
+                    },
+                    "bearing" => {
+                        extension.bearing = Some(
+                            string::consume(context, "bearing", false)?
+                                .parse()
+                                .chain_err(|| "error while casting speed to f64")?,
+                        );
+                    }
+                    x => {
+                        println!("Unknown tag in extensions!");
+                    }
                 }
             }
-
-            XmlEvent::EndElement { name, .. } => {
-                if &name.local_name == "extensions" {
-                    return Ok(());
-                }
+            XmlEvent::EndElement { ref name } => {
+                context.reader.next(); //consume the end tag
+                return Ok(extension);
             }
-
-            _ => {}
+            _ => {
+                println!("What is this tag?");
+                context.reader.next(); //consume and ignore this event
+            }
         }
     }
-
-    Err("no end tag for extensions".into())
+    panic!("Couldn't parse extension");
 }
 
 #[cfg(test)]

@@ -134,7 +134,12 @@ pub fn consume<R: Read>(context: &mut Context<R>, tagname: &'static str) -> Resu
                     }
 
                     // Finally the GPX 1.1 extensions
-                    "extensions" => extensions::consume(context)?,
+                    "extensions" => {
+                        let extensions = extensions::consume(context)?;
+                        waypoint.speed      = extensions.speed;
+                        waypoint.accuracy   = extensions.accuracy;
+                        waypoint.bearing    = extensions.bearing;
+                    },
                     child => {
                         bail!(ErrorKind::InvalidChildElement(
                             String::from(child),

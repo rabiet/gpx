@@ -325,7 +325,20 @@ pub struct Waypoint {
 
     /// ID of DGPS station used in differential correction, in the range [0, 1023].
     pub dgpsid: Option<u16>,
+
+    /// Accuracy in Meters
+    pub accuracy : Option<f64>,
+
+    /// Bearing in degrees
+    pub bearing : Option<f64>
     // <extensions> extensionsType </extensions> [0..1] ?
+}
+
+pub struct Extension {
+    pub speed       : Option<f64>,
+    pub accuracy    : Option<f64>,
+    pub bearing     : Option<f64>
+
 }
 
 impl Waypoint {
